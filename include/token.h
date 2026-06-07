@@ -32,15 +32,15 @@ typedef struct {
 } TokenValue;
 
 typedef struct {
+    const char *filename;
     int line;
     int col;
-    const char *filename;
 } TokenLocation;
 
 typedef struct {
-    TokenType type;
     TokenLocation loc;
     TokenValue val;
+    TokenType type;
 } Token;
 
 const char *tokenTypeToString(TokenType type);

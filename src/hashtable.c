@@ -15,22 +15,59 @@ uint32_t fnv1a_hash(const char *key) {
     return hash;
 }
 
-HashTable hashTable_init(Arena arena, uint32_t size) {
-    if (size < 16)
-        size = 16;
+HashTable hashTable_init(Arena *arena, size_t capacity) {
+    if (capacity < 16)
+        capacity = 16;
     uint32_t p = 1;
 
-    while (p < size)
+    // find the nearest higher power of two
+    while (p < capacity)
         p *= 2;
-    size = p;
+    capacity = p;
 
     HashTable table = {
-        .arena = arena, .buckets = calloc(size, sizeof(HashBucket *)), .capacity = size};
+        .arena = arena,
+        .buckets = calloc(capacity, sizeof(HashBucket *)),
+        .capacity = capacity,
+        .max_size = (capacity * 3) >> 2,
+    };
 
     assert(table.buckets != NULL && "Out of memory");
     return table;
 }
+void hashtable_rehash(HashTable *table) {
+    size_t old_capacity = table->capacity;
+    size_t new_capacity = old_capacity << 1;
+
+    HashBucket **old_buckets = table->buckets;
+    HashBucket **new_buckets = calloc(new_capacity, sizeof(HashBucket *));
+    assert(new_buckets != NULL && "Out of memory during rehash");
+
+    for (size_t i = 0; i < old_capacity; i++) {
+        HashBucket *current = old_buckets[i];
+        while (current != NULL) {
+            HashBucket *next = current->next;
+
+            uint32_t hash = fnv1a_hash(current->key);
+            uint32_t new_index = hash & (new_capacity - 1);
+
+            current->next = new_buckets[new_index];
+            new_buckets[new_index] = current;
+
+            current = next;
+        }
+    }
+
+    free(old_buckets);
+    table->buckets = new_buckets;
+    table->capacity = new_capacity;
+    table->max_size = (new_capacity * 3) >> 2;
+}
+
 void hashTable_insert(HashTable *table, const char *key, uint32_t value) {
+    if (table->size >= table->max_size) {
+        hashtable_rehash(table);
+    }
     uint32_t hash = fnv1a_hash(key);
     uint32_t index = hash & (table->capacity - 1);
     HashBucket *current = table->buckets[index];
@@ -43,12 +80,13 @@ void hashTable_insert(HashTable *table, const char *key, uint32_t value) {
         current = current->next;
     }
 
-    HashBucket *new_bucket = arena_alloc(&table->arena, sizeof(HashBucket));
+    HashBucket *new_bucket = arena_alloc(table->arena, sizeof(HashBucket));
     new_bucket->key = key;
     new_bucket->value = value;
 
     new_bucket->next = table->buckets[index];
     table->buckets[index] = new_bucket;
+    table->size++;
 }
 uint32_t *hashTable_get(HashTable *table, const char *key) {
     uint32_t hash = fnv1a_hash(key);
@@ -65,5 +103,7 @@ uint32_t *hashTable_get(HashTable *table, const char *key) {
 }
 void hashTable_free(HashTable *table) {
     free(table->buckets);
+    table->buckets = NULL;
     table->capacity = 0;
+    table->size = 0;
 }

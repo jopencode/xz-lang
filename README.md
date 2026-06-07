@@ -12,7 +12,7 @@ Instead of using heavy standard libraries, I implement core components manually 
 
 The project is under active development. Currently, it supports lexing, parsing, and evaluating basic arithmetic expressions, taking into account operator precedence (`+`, `-`, `*`, `/` and parentheses). 
 
-Example: `5 + 129 * 2`
+Example: `(5 + 129) * 2`
 
 ## 🗺️ Development Plan
 

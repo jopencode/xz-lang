@@ -31,17 +31,29 @@ void error_at(Parser *p, Token t, const char *msgFmt, ...) {
 
 AstNode *parse_factor(Parser *p) {
     Token t = p->current_token;
-    if (t.type == T_NUMBER) {
-        advance(p);
-        return createNumberNode(p->arena, parseInt(t.val.start, t.val.length));
-    }
-    if (t.type == T_NEWLINE) {
-        advance(p);
-        return parse_factor(p);
-    }
-    error_at(p, t, "Expected number, got %s", tokenTypeToString(p->current_token.type));
     advance(p);
-    return NULL;
+    switch (t.type) {
+    case T_NUMBER:
+        return createNumberNode(p->arena, parseInt(t.val.start, t.val.length));
+    case T_NEWLINE:
+        return parse_expr(p);
+    case T_LPAREN: {
+        AstNode *node = parse_expr(p);
+        t = p->current_token;
+        advance(p);
+        if (t.type != T_RPAREN) {
+            error_at(p, t, "Expected ')', got %s",
+                     tokenTypeToString(p->current_token.type));
+            return NULL;
+        }
+        return node;
+    }
+    default:
+        error_at(p, t, "Expected number, got %s",
+                 tokenTypeToString(p->current_token.type));
+        advance(p);
+        return NULL;
+    }
 }
 
 AstNode *parse_term(Parser *p) {
@@ -70,10 +82,12 @@ AstNode *parse_expr(Parser *p) {
 }
 
 int execute(AstNode *node) {
+    if (!node)
+        return 0;
     switch (node->type) {
     case N_NUMBER:
         return node->as.number.val;
-    case N_BINARY:
+    case N_BINARY: {
         int l = execute(node->as.binary.l);
         int r = execute(node->as.binary.r);
         switch (node->as.binary.op) {
@@ -89,5 +103,7 @@ int execute(AstNode *node) {
             return 0;
         }
     }
-    return 0;
+    default:
+        return 0;
+    }
 }
