@@ -4,10 +4,11 @@
 #include <stdint.h>
 
 #include "arena.h"
+#include "value.h"
 
 typedef struct HashBucket {
     const char *key;
-    uint32_t value;
+    Value value;
     struct HashBucket *next;
 } HashBucket;
 
@@ -20,6 +21,6 @@ typedef struct {
 } HashTable;
 
 HashTable hashTable_init(Arena *arena, size_t capacity);
-void hashTable_insert(HashTable *table, const char *key, uint32_t value);
-uint32_t *hashTable_get(HashTable *table, const char *key);
+void hashTable_insert(HashTable *table, const char *key, Value value);
+Value *hashTable_get(HashTable *table, const char *key);
 void hashTable_free(HashTable *table);

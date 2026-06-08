@@ -63,8 +63,39 @@ Token nextToken(Lexer *l) {
         }
         t.type = T_SLASH;
         return t;
+    case '"': {
+        int startPos = l->pos;
+        while (l->source[l->pos] != '\0' && l->source[l->pos] != '"') {
+            if (l->source[l->pos] == '\n') {
+                Token token = make_error_token(l->loc, "Unterminated string");
+                l->pos++;
+                l->loc.line++;
+                l->loc.col = 1;
+                return token;
+            }
+
+            l->pos++;
+            l->loc.col++;
+        }
+        if (l->source[l->pos] == '"') {
+            t.val.start = &l->source[startPos];
+            t.val.length = l->pos - startPos;
+            t.type = T_STRING;
+
+            l->pos++;
+            l->loc.col++;
+            return t;
+        }
+        return nextToken(l);
+    }
     case '=':
         t.type = T_ASSIGN;
+        return t;
+    case '>':
+        t.type = T_GREATER;
+        return t;
+    case '<':
+        t.type = T_LESS;
         return t;
     case '.':
         t.type = T_DOT;
@@ -107,9 +138,10 @@ Token nextToken(Lexer *l) {
             l->pos++;
             l->loc.col++;
         }
-        t.type = T_IDENT;
         t.val.length = l->pos - startPos;
+        t.type = findKeyword(t.val.start, t.val.length);
         return t;
     }
+    t.type = T_ILLEGAL;
     return t;
 }

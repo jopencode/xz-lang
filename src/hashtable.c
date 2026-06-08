@@ -64,7 +64,7 @@ void hashtable_rehash(HashTable *table) {
     table->max_size = (new_capacity * 3) >> 2;
 }
 
-void hashTable_insert(HashTable *table, const char *key, uint32_t value) {
+void hashTable_insert(HashTable *table, const char *key, Value value) {
     if (table->size >= table->max_size) {
         hashtable_rehash(table);
     }
@@ -88,7 +88,7 @@ void hashTable_insert(HashTable *table, const char *key, uint32_t value) {
     table->buckets[index] = new_bucket;
     table->size++;
 }
-uint32_t *hashTable_get(HashTable *table, const char *key) {
+Value *hashTable_get(HashTable *table, const char *key) {
     uint32_t hash = fnv1a_hash(key);
     uint32_t index = hash & (table->capacity - 1);
     HashBucket *current = table->buckets[index];

@@ -5,20 +5,26 @@
 
 typedef enum {
     N_NUMBER,
+    N_STRING,
     N_BINARY,
     N_VARIABLE,
     N_ASSIGN,
     N_IF,
     N_WHILE,
-    N_BLOCK
+    N_BLOCK,
+    N_CALL
 } NodeType;
 
 typedef struct AstNode {
     NodeType type;
+    TokenLocation loc;
     union {
         struct {
-            int val;
+            double val;
         } number;
+        struct {
+            const char *val;
+        } string;
         struct {
             struct AstNode *l;
             struct AstNode *r;
@@ -44,13 +50,20 @@ typedef struct AstNode {
             struct AstNode **statements;
             int count;
         } block;
+        struct {
+            const char *name;
+            int count;
+            struct AstNode **args;
+        } native_func;
     } as;
 } AstNode;
 
-AstNode *createNumberNode(Arena *arena, int val);
+AstNode *createNumberNode(Arena *arena, double val);
+AstNode *createStringNode(Arena *arena, const char *val);
 AstNode *createBinaryNode(Arena *arena, AstNode *l, AstNode *r, TokenType op);
 AstNode *createVariableNode(Arena *arena, const char *name);
 AstNode *createAssignNode(Arena *arena, const char *name, AstNode *value);
 AstNode *createIfNode(Arena *arena, AstNode *cond, AstNode *then, AstNode *els);
 AstNode *createWhileNode(Arena *arena, AstNode *cond, AstNode *body);
 AstNode *createBlockNode(Arena *arena, AstNode **stmts, int count);
+AstNode *createNativeFuncNode(Arena *arena, const char *name, AstNode **args, int count);
